@@ -6,10 +6,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 @RestController
 @RequestMapping("/drug")
+@CrossOrigin("http://localhost:3000")
 public class DrugController {
     @Autowired
     private DrugService drugService;
@@ -31,9 +36,25 @@ public class DrugController {
     }
 
     @PostMapping("/save")
-    public ResponseEntity<Drug> createDrug(@RequestBody Drug drug) {
-        Drug createdDrug = drugService.createDrug(drug);
-        return new ResponseEntity<>(createdDrug, HttpStatus.CREATED); // 201 Created
+    public ResponseEntity<Drug> createDrug(
+            @RequestPart("drug") Drug drug,
+            @RequestPart("file") MultipartFile file) {
+
+        try {
+            // Set the file path to your Downloads directory
+            String filePath = System.getProperty("user.home") + "/Downloads/" + file.getOriginalFilename();
+
+            // Transfer the file to the Downloads directory
+            file.transferTo(new File(filePath));
+
+            // Set the file path in the Drug object
+            drug.setFilePath(filePath);
+
+            Drug createdDrug = drugService.createDrug(drug);
+            return new ResponseEntity<>(createdDrug, HttpStatus.CREATED); // 201 Created
+        } catch (IOException e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR); // 500 Internal Server Error
+        }
     }
 
     @PutMapping("/update/{id}")
